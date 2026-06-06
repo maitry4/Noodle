@@ -16,6 +16,20 @@ Just vent, laugh, and move on.
 
 ---
 
+## 📸 Screenshots
+
+### Onboarding Experience
+
+| Screen 1 | Screen 2 |
+|----------|----------|
+| ![](UI_Designs/onboarding_screen1.png) | ![](UI_Designs/onboarding_screen2.png) |
+
+| Screen 3 | Screen 4 |
+|----------|----------|
+| ![](UI_Designs/onboarding_screen3.png) | ![](UI_Designs/onboarding_screen4.png) |
+
+---
+
 ## ✨ Vision
 
 Most AI assistants try to remember more about you over time.
