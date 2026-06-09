@@ -110,20 +110,118 @@ Everything is forgotten
 
 ## 🏗 Architecture
 
+### Repository Structure
+
+```text
+Noodle/
+│
+├── flutter-app/
+│   ├── lib/
+│   ├── android/
+│   └── ...
+│
+├── server/
+│   ├── main.py
+│   ├── services/
+│   └── ...
+│
+├── static/
+│   ├── index.html
+│   ├── style.css
+│   └── script.js
+│
+└── README.md
+```
+
 ### Frontend
 
-- Flutter
-- Riverpod
-- Hive
-- Speech Recognition
-- Text To Speech
+Built with Flutter using a lightweight feature-based architecture.
+
+**Technologies**
+
+* Flutter
+* Riverpod
+* GoRouter
+* Hive
+* Local Device Storage
+
+**Features**
+
+* Onboarding flow
+* Floating Noodle companion
+* Settings management
+* Bring-your-own-key support
+* Audio recording and playback
+
+---
 
 ### Backend
 
-- FastAPI
-- Gemini API
-- Model Routing
-- Rate Limiting
+Built with FastAPI and designed to remain stateless wherever possible.
+
+**Technologies**
+
+* FastAPI
+* Gemini API
+* REST API
+* Rate Limiting
+* Temporary Audio Processing
+
+**Services**
+
+* Request validation
+* Usage limit checks
+* Audio processing
+* Response generation
+* Statistics tracking
+
+---
+
+## 🌐 Deployment
+
+### Landing Page
+
+The public website is hosted separately from the application backend.
+
+```text
+GitHub Pages
+        │
+        ▼
+Landing Page
+```
+
+### Backend API
+
+```text
+FastAPI
+        │
+        ▼
+AWS Lambda
+```
+
+### Mobile App
+
+```text
+Flutter APK
+        │
+        ▼
+Gumroad Distribution
+```
+
+This separation keeps infrastructure simple, inexpensive, and easy to scale independently.
+
+---
+
+## 📊 Public Statistics
+
+Noodle exposes a lightweight public endpoint that powers the landing page statistics.
+
+Examples:
+
+* Total rants resolved
+* Requests processed
+
+No personal user information is included in these metrics.
 
 ---
 
@@ -131,19 +229,27 @@ Everything is forgotten
 
 ### Stored Locally
 
-- Onboarding status
-- Theme preferences
-- Voice preferences
-- Optional user API key
-- Device identifier
+* Onboarding status
+* User preferences
+* Optional Gemini API key
+* Device identifier
 
-### Not Stored
+### Temporarily Processed
 
-- Emotional dumps
-- Voice recordings
-- AI responses
-- Conversation history
-- User profiles
+* Voice recordings
+* Speech transcripts
+
+These exist only long enough to generate a response and are automatically discarded.
+
+### Never Stored
+
+* Conversation history
+* Emotional dumps
+* User profiles
+* Long-term memories
+* Personal journals
+
+Noodle is intentionally designed without persistent memory.
 
 ---
 
@@ -158,19 +264,6 @@ Benefits:
 - Faster access during high traffic periods
 
 Users can also use the shared Noodle key, subject to rate limits.
-
----
-
-## 🚀 Planned Features
-
-- [ ] Onboarding experience
-- [ ] Floating Noodle companion
-- [ ] Speech-to-text input
-- [ ] AI response generation
-- [ ] Text-to-speech playback
-- [ ] Bring-your-own-key support
-- [ ] Rate limiting
-
 
 ---
 
