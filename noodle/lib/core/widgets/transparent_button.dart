@@ -1,0 +1,2 @@
+// ignore: dangling_library_doc_comments
+/// This file will have a button widget that though has text and stuff but is just placed you can't seen it. because I'll just have the image in background on image this button will be stacked for functionality across all the screens.

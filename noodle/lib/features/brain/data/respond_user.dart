@@ -1,0 +1,2 @@
+// ignore: dangling_library_doc_comments
+/// This file takes audio saves it and sends it to backend based on hive settings (with or without api key) and then provides result back to the floating char again. all in all it interacts with all the hive services.

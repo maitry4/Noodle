@@ -1,0 +1,2 @@
+// ignore: dangling_library_doc_comments
+/// This file interacts with the fastapi using websocket. It also sends a way to uniquely identify the app. This also needs to interact with hive services to get settings(api key) and audio service to get the audio.
