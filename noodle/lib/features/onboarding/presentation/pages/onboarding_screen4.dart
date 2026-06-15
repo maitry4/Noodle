@@ -21,7 +21,7 @@ class OnboardingScreen4 extends StatelessWidget {
                 width: 150,
                 height: 50,
                 onTap: () {
-                  context.go(AppRoutes.splash);
+                  context.go(AppRoutes.saveSettings);
                   // save settings as shared brain in hive.
                 },
               ),
@@ -32,7 +32,7 @@ class OnboardingScreen4 extends StatelessWidget {
                 width: 150,
                 height: 50,
                 onTap: () {
-                  context.go(AppRoutes.saveSettings);
+                  context.go(AppRoutes.saveApi);
                   // go to get api form
                 },
               ),

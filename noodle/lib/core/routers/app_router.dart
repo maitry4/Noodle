@@ -7,6 +7,7 @@ import 'package:noodle/features/onboarding/presentation/pages/onboarding_screen2
 import 'package:noodle/features/onboarding/presentation/pages/onboarding_screen3.dart';
 import 'package:noodle/features/onboarding/presentation/pages/onboarding_screen4.dart';
 import 'package:noodle/features/onboarding/presentation/pages/save_user_api.dart';
+import 'package:noodle/features/settings/presentation/save_settings.dart';
 import 'package:noodle/features/splash/presentation/pages/splash_screen.dart';
 
 
@@ -36,8 +37,12 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const SplashScreen(),
     ),
     GoRoute(
-      path: AppRoutes.saveSettings,
+      path: AppRoutes.saveApi,
       builder: (context, state) => const SaveUserApi(),
+    ),
+    GoRoute(
+      path: AppRoutes.saveSettings,
+      builder: (context, state) => const SaveUserSettings(),
     ),
     GoRoute(
       path: AppRoutes.brain,

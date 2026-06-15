@@ -8,5 +8,6 @@ class AppRoutes {
   static const onboarding4 = '/onboarding4';
 
   static const saveSettings = '/save_settings';
+  static const saveApi = '/save_api';
   static const brain = '/brain';
 }
