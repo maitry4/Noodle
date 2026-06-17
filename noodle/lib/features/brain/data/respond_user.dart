@@ -7,7 +7,7 @@ import 'package:noodle/core/services/backend_services.dart';
 
 class RespondUser extends ChangeNotifier {
   final AudioService _audioService = AudioService();
-  // final BackendService _backendService = BackendService();
+  final BackendService _backendService = BackendService();
 
   bool _isRecording = false;
   bool _isProcessing = false;
@@ -49,7 +49,10 @@ class RespondUser extends ChangeNotifier {
     }
 
     try {
-      // await _backendService.processAudio(audioPath);
+      final response =
+    await _backendService.processAudio(audioPath);
+
+debugPrint("NOODLE RESPONSE: $response");
 
       await _audioService.deleteTempFile(audioPath);
     } finally {

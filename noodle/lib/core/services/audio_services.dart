@@ -22,11 +22,12 @@ class AudioService {
 
     final tempDir = await getTemporaryDirectory();
 
-    final filePath = '${tempDir.path}/temp_audio.m4a';
-
+    final filePath = '${tempDir.path}/temp_audio.pcm';
+    print("--------------------------------------------------------------------------------------------------------------------------------------here are the audio files I can use");
+    print(AudioEncoder.values);
     await _audioRecorder.start(
       const RecordConfig(
-        encoder: AudioEncoder.aacLc,
+        encoder: AudioEncoder.pcm16bits,
         bitRate: 64000,
         sampleRate: 16000,
       ),
