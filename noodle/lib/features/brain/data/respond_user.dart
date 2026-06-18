@@ -11,9 +11,18 @@ class RespondUser extends ChangeNotifier {
 
   bool _isRecording = false;
   bool _isProcessing = false;
+  bool _isPlaying = false;
+
+  RespondUser() {
+    _audioService.onPlayerComplete.listen((_) {
+      _isPlaying = false;
+      notifyListeners();
+    });
+  }
 
   bool get isRecording => _isRecording;
   bool get isProcessing => _isProcessing;
+  bool get isPlaying => _isPlaying;
 
   String get statusText {
     if (_isRecording) {
@@ -22,6 +31,10 @@ class RespondUser extends ChangeNotifier {
 
     if (_isProcessing) {
       return "I hear you. Wait.";
+    }
+
+    if (_isPlaying) {
+      return "Noodle is speaking...";
     }
 
     return "Tap Dump";
@@ -49,14 +62,20 @@ class RespondUser extends ChangeNotifier {
     }
 
     try {
-      final response =
-    await _backendService.processAudio(audioPath);
+      final audioBytes = await _backendService.processAudio(audioPath);
 
-debugPrint("NOODLE RESPONSE: $response");
+      debugPrint("NOODLE RESPONSE: Received ${audioBytes.length} bytes");
 
-      await _audioService.deleteTempFile(audioPath);
-    } finally {
       _isProcessing = false;
+      _isPlaying = true;
+      notifyListeners();
+
+      await _audioService.playAudioBytes(audioBytes);
+      await _audioService.deleteTempFile(audioPath);
+    } catch (e) {
+      debugPrint("Error processing dump: $e");
+      _isProcessing = false;
+      _isPlaying = false;
       notifyListeners();
     }
   }

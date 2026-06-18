@@ -148,7 +148,7 @@ Built with Flutter using a lightweight feature-based architecture.
 **Features**
 
 * Onboarding flow
-* Floating Noodle companion
+* Immersive In-App Noodle companion (dynamic UI & premium interactions)
 * Settings management
 * Bring-your-own-key support
 * Audio recording and playback

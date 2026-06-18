@@ -1,10 +1,12 @@
 from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import Response
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
 import os
 import time
+
 
 load_dotenv()
 
@@ -22,7 +24,62 @@ Noodle is a sarcastic but kind voice companion.
 
 Respond in under 2 sentences.
 """
+def pcm_to_wav(pcm_data: bytes, sample_rate=24000):
 
+    import struct
+
+    channels = 1
+    bits_per_sample = 16
+
+    byte_rate = (
+        sample_rate *
+        channels *
+        bits_per_sample // 8
+    )
+
+    block_align = (
+        channels *
+        bits_per_sample // 8
+    )
+
+
+    wav_header = b'RIFF'
+
+    wav_header += struct.pack(
+        '<I',
+        36 + len(pcm_data)
+    )
+
+    wav_header += b'WAVE'
+
+
+    wav_header += b'fmt '
+
+    wav_header += struct.pack(
+        '<I',
+        16
+    )
+
+    wav_header += struct.pack(
+        '<HHIIHH',
+        1,              # PCM format
+        channels,
+        sample_rate,
+        byte_rate,
+        block_align,
+        bits_per_sample
+    )
+
+
+    wav_header += b'data'
+
+    wav_header += struct.pack(
+        '<I',
+        len(pcm_data)
+    )
+
+
+    return wav_header + pcm_data
 
 @app.post("/noodle")
 async def noodle(audio: UploadFile = File(...)):
@@ -32,61 +89,40 @@ async def noodle(audio: UploadFile = File(...)):
     try:
         print("\n========== REQUEST START ==========")
 
-        print(
-            "File name:",
-            audio.filename
-        )
-
-        print(
-            "Content type:",
-            audio.content_type
-        )
+        print("File:", audio.filename)
+        print("Mime:", audio.content_type)
 
 
-        print("Reading bytes...")
         audio_bytes = await audio.read()
 
         print(
-            "Read complete:",
-            len(audio_bytes),
-            "bytes",
-            "time:",
-            time.time() - start
+            "Input bytes:",
+            len(audio_bytes)
         )
 
 
-        print("Connecting to Gemini Live...")
+        print("Connecting Gemini...")
 
-        live_start = time.time()
 
         async with client.aio.live.connect(
             model="gemini-2.5-flash-native-audio-latest",
         ) as session:
 
-            print(
-                "Connected to Gemini:",
-                time.time() - live_start
-            )
 
+            print("Gemini connected")
 
-            print("Sending instruction...")
 
             await session.send(
                 input=(
-                    SYSTEM_PROMPT
-                    + "\nListen to user's audio and respond as Noodle."
+                    SYSTEM_PROMPT +
+                    "\nListen to user audio and reply as Noodle."
                 ),
                 end_of_turn=False,
             )
 
 
-            print(
-                "Instruction sent:",
-                time.time() - start
-            )
+            print("Sending audio")
 
-
-            print("Sending PCM audio...")
 
             await session.send_realtime_input(
                 audio=types.Blob(
@@ -96,69 +132,55 @@ async def noodle(audio: UploadFile = File(...)):
             )
 
 
-            print(
-                "Audio sent:",
-                time.time() - start
-            )
-
-
-            print("Ending audio stream...")
-
             await session.send_realtime_input(
                 audio_stream_end=True
             )
 
 
-            print(
-                "Waiting for response..."
-            )
+            print("Waiting response")
 
 
-            full_text = ""
-
-            receive_start = time.time()
+            output_audio = bytearray()
 
 
             async for message in session.receive():
 
-                print(
-                    "MESSAGE RECEIVED after:",
-                    time.time() - receive_start
-                )
-
-
                 if message.server_content:
 
-                    model_turn = message.server_content.model_turn
+                    model_turn = (
+                        message.server_content.model_turn
+                    )
+
 
                     if model_turn:
 
                         for part in model_turn.parts:
 
-                            print("PART:", part)
 
+                            # Gemini text thinking ignored
 
-                            # Ignore internal thinking text
-                            if part.text and not part.thought:
+                            if part.inline_data:
 
                                 print(
-                                    "REAL TEXT:",
-                                    part.text
+                                    "Audio chunk:",
+                                    len(part.inline_data.data)
                                 )
 
-                                full_text += part.text
+                                output_audio.extend(
+                                    part.inline_data.data
+                                )
 
 
-                # Stop when Gemini finishes
-                if message.server_content:
                     if message.server_content.turn_complete:
                         break
 
 
+
             print(
-                "Final text:",
-                full_text
+                "Output audio bytes:",
+                len(output_audio)
             )
+
 
             print(
                 "Total time:",
@@ -166,17 +188,25 @@ async def noodle(audio: UploadFile = File(...)):
             )
 
 
-            return {
-                "text": full_text or "No response"
-            }
+            wav_audio = pcm_to_wav(
+                bytes(output_audio),
+                sample_rate=24000
+            )
+
+
+            return Response(
+                content=wav_audio,
+                media_type="audio/wav",
+                headers={
+                    "Content-Disposition":
+                    "attachment; filename=noodle.wav"
+                }
+            )
 
 
     except Exception as e:
 
-        print(
-            "ERROR:",
-            repr(e)
-        )
+        print("ERROR:", repr(e))
 
         return {
             "error": str(e)

@@ -65,16 +65,21 @@ class _FloatingCharacterState extends State<FloatingCharacter> {
 
                 if (!controller.isProcessing)
                   NoodleButton(
-                    text:
-                        controller.isRecording ? "Stop" : "Dump",
+                    text: controller.isPlaying 
+                        ? "Listening..." 
+                        : (controller.isRecording ? "Stop" : "Dump"),
                     color: AppColors.accentBrown,
-                    onPressed: () async {
-                      if (controller.isRecording) {
-                        await controller.stopDump();
-                      } else {
-                        await controller.startDump();
-                      }
-                    },
+                    onPressed: controller.isPlaying
+                        ? () {}
+                        : () {
+                            () async {
+                              if (controller.isRecording) {
+                                await controller.stopDump();
+                              } else {
+                                await controller.startDump();
+                              }
+                            }();
+                          },
                   ),
               ],
             ),
