@@ -1,27 +1,47 @@
-// ignore: dangling_library_doc_comments
-/// This file takes audio saves it and sends it to backend based on hive settings (with or without api key) and then provides result back to the floating char again. all in all it interacts with all the hive services.
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'package:noodle/core/services/audio_services.dart';
-import 'package:noodle/core/services/backend_services.dart';
+import 'package:noodle/core/services/websocket_service.dart';
 
 class RespondUser extends ChangeNotifier {
-  final AudioService _audioService = AudioService();
-  final BackendService _backendService = BackendService();
+  final AudioService _audioService =
+      AudioService();
+
+  late final WebSocketService _ws;
+
+  StreamSubscription<Uint8List>?
+      _micSubscription;
 
   bool _isRecording = false;
   bool _isProcessing = false;
   bool _isPlaying = false;
 
   RespondUser() {
-    _audioService.onPlayerComplete.listen((_) {
+    _ws = WebSocketService();
+
+    _ws.onAudioReceived =
+        _handleAudioResponse;
+
+
+    _audioService.onPlayerComplete.listen(
+    (_) async {
       _isPlaying = false;
+
+      await _ws.disconnect();
+
       notifyListeners();
-    });
+    },
+  );
   }
 
+  
   bool get isRecording => _isRecording;
+
   bool get isProcessing => _isProcessing;
+
   bool get isPlaying => _isPlaying;
 
   String get statusText {
@@ -40,49 +60,60 @@ class RespondUser extends ChangeNotifier {
     return "Tap Dump";
   }
 
-  Future<void> startDump() async {
-    _isRecording = true;
-    notifyListeners();
+ Future<void> startDump() async {
+  await _ws.connect();
 
-    await _audioService.startRecording();
-  }
+  _isRecording = true;
 
-  Future<void> stopDump() async {
-    _isRecording = false;
-    _isProcessing = true;
+  notifyListeners();
 
-    notifyListeners();
+  final stream =
+      await _audioService
+          .startRecordingStream();
 
-    final audioPath = await _audioService.stopRecording();
-    debugPrint("AUDIO PATH: $audioPath");
-    if (audioPath == null) {
-      _isProcessing = false;
-      notifyListeners();
-      return;
-    }
+  _micSubscription =
+      stream.listen((chunk) {
+    _ws.sendBytes(chunk);
+  });
+}
+ Future<void> stopDump() async {
+  _isRecording = false;
+  _isProcessing = true;
 
-    try {
-      final audioBytes = await _backendService.processAudio(audioPath);
+  notifyListeners();
 
-      debugPrint("NOODLE RESPONSE: Received ${audioBytes.length} bytes");
+  await _micSubscription?.cancel();
 
-      _isProcessing = false;
-      _isPlaying = true;
-      notifyListeners();
+  await _audioService
+      .stopRecordingStream();
 
-      await _audioService.playAudioBytes(audioBytes);
-      await _audioService.deleteTempFile(audioPath);
-    } catch (e) {
-      debugPrint("Error processing dump: $e");
-      _isProcessing = false;
-      _isPlaying = false;
-      notifyListeners();
-    }
-  }
+  _ws.send("END");
+}
+ Future<void> _handleAudioResponse(
+  Uint8List bytes,
+) async {
+  debugPrint(
+    "Playing ${bytes.length} bytes",
+  );
 
+  _isProcessing = false;
+  _isPlaying = true;
+
+  notifyListeners();
+
+  await _audioService.playAudioBytes(
+    bytes,
+  );
+
+}
   @override
   void dispose() {
+    _micSubscription?.cancel();
+
+    _ws.disconnect();
+
     _audioService.dispose();
+
     super.dispose();
   }
 }

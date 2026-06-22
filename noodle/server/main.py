@@ -2,32 +2,45 @@ from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import Response
 from dotenv import load_dotenv
 
-from services.noodle_service import NoodleService
-
+from fastapi import WebSocket, WebSocketDisconnect
 import os
 
-
+from services.noodle_websocket_service import NoodleWebSocketService
 load_dotenv()
 
 app = FastAPI()
 
 API_KEY = os.getenv("API_KEY")
 
-noodle_service = NoodleService(API_KEY)
-@app.post("/noodle")
-async def noodle(audio: UploadFile = File(...)):
-    audio_bytes = await audio.read()
-    wav_audio = await noodle_service.process_audio(
-        audio_bytes=audio_bytes,
-        filename=audio.filename,
-        mime_type=audio.content_type,
-    )
 
-    return Response(
-        content=wav_audio,
-        media_type="audio/wav",
-        headers={
-            "Content-Disposition":
-            "attachment; filename=noodle.wav"
-        },
-    )
+@app.websocket("/ws/noodle")
+async def noodle_socket(
+    websocket: WebSocket,
+):
+    await websocket.accept()
+
+    print("WebSocket connected")
+    ws_service = NoodleWebSocketService(API_KEY)
+
+    try:
+
+        await ws_service.process_stream(
+            websocket
+        )
+
+    except WebSocketDisconnect:
+
+        print(
+            "WebSocket disconnected"
+        )
+
+    except Exception as e:
+
+        print(
+            f"WebSocket Error: {repr(e)}"
+        )
+
+        try:
+            await websocket.close()
+        except:
+            pass

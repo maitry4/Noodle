@@ -1,6 +1,7 @@
 // ignore: dangling_library_doc_comments
 /// The floating overlay with buttons based on what's happening.
 /// It will also have a small settings gear that takes you to modify options page.
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,7 +19,7 @@ class FloatingCharacter extends StatefulWidget {
 }
 
 class _FloatingCharacterState extends State<FloatingCharacter> {
-  final RespondUser controller = RespondUser();
+  late final RespondUser controller = RespondUser();
 
   @override
   void initState() {
@@ -47,39 +48,35 @@ class _FloatingCharacterState extends State<FloatingCharacter> {
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(
-                  'assets/floating_noodle_image.webp',
-                  height: 180,
-                ),
+                Image.asset('assets/floating_noodle_image.webp', height: 180),
 
                 const SizedBox(height: 20),
 
                 Text(
                   controller.statusText,
-                  style: const TextStyle(
-                    fontSize: 18,
-                  ),
+                  style: const TextStyle(fontSize: 18),
                 ),
 
                 const SizedBox(height: 20),
 
                 if (!controller.isProcessing)
-                  NoodleButton(
-                    text: controller.isPlaying 
-                        ? "Listening..." 
-                        : (controller.isRecording ? "Stop" : "Dump"),
-                    color: AppColors.accentBrown,
+                  ElevatedButton(
                     onPressed: controller.isPlaying
-                        ? () {}
-                        : () {
-                            () async {
-                              if (controller.isRecording) {
-                                await controller.stopDump();
-                              } else {
-                                await controller.startDump();
-                              }
-                            }();
+                        ? null
+                        : () async {
+                            if (controller.isRecording) {
+                              await controller.stopDump();
+                            } else {
+                              await controller.startDump();
+                            }
                           },
+                    child: Text(
+                      controller.isPlaying
+                          ? "Speaking..."
+                          : controller.isRecording
+                          ? "Stop"
+                          : "Dump",
+                    ),
                   ),
               ],
             ),
