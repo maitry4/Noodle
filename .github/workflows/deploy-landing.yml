@@ -1,5 +1,8 @@
 name: Deploy Landing Page
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [main]
