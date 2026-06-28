@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  basePath: "",  
-  assetPrefix: "",
+  basePath: "/Noodle",
+  assetPrefix: "/Noodle/",
 };
 
 export default nextConfig;
