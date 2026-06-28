@@ -1,0 +1,75 @@
+name: Deploy Landing Page
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "landing_page/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Check commit message trigger
+      - name: Check commit message
+        id: check
+        run: |
+          MESSAGE=$(git log -1 --pretty=%B)
+          echo "Commit message: $MESSAGE"
+
+          if [[ "$MESSAGE" != *"deploy:landing"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      # 3. Skip job if not deployment commit
+      - name: Skip deployment
+        if: steps.check.outputs.skip == 'true'
+        run: echo "Not a deploy commit. Skipping..."
+
+      # 4. Setup Node.js
+      - name: Setup Node
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # 5. Cache npm dependencies (FASTER BUILDS)
+      - name: Cache node modules
+        if: steps.check.outputs.skip == 'false'
+        uses: actions/cache@v4
+        with:
+          path: landing_page/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('landing_page/package-lock.json') }}
+
+      # 6. Install dependencies
+      - name: Install dependencies
+        if: steps.check.outputs.skip == 'false'
+        working-directory: landing_page
+        run: npm install
+
+      # 7. Build Next.js
+      - name: Build Next.js
+        if: steps.check.outputs.skip == 'false'
+        working-directory: landing_page
+        run: npm run build
+
+      # 8. Export static site
+      - name: Export static site
+        if: steps.check.outputs.skip == 'false'
+        working-directory: landing_page
+        run: npm run export
+
+      # 9. Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
+        if: steps.check.outputs.skip == 'false'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: landing_page/out
