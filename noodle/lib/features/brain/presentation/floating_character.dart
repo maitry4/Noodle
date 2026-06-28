@@ -1,15 +1,17 @@
-// ignore: dangling_library_doc_comments
-/// The floating overlay with buttons based on what's happening.
-/// It will also have a small settings gear that takes you to modify options page.
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:noodle/core/theme/app_colors.dart';
-import 'package:noodle/core/widgets/noodle_button.dart';
 import 'package:noodle/core/routers/app_routes.dart';
+import 'package:noodle/core/theme/app_colors.dart';
 
 import '../data/respond_user.dart';
+import 'widgets/dump_button.dart';
+import 'widgets/noodle_character.dart';
+import 'widgets/noodle_overlays.dart';
+import 'widgets/steam_layer.dart';
+
+const _bgTop = Color(0xFF1C0F05);
+const _bgBottom = Color(0xFF2E1A0E);
 
 class FloatingCharacter extends StatefulWidget {
   const FloatingCharacter({super.key});
@@ -24,11 +26,8 @@ class _FloatingCharacterState extends State<FloatingCharacter> {
   @override
   void initState() {
     super.initState();
-
     controller.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
+      if (mounted) setState(() {});
     });
   }
 
@@ -38,60 +37,90 @@ class _FloatingCharacterState extends State<FloatingCharacter> {
     super.dispose();
   }
 
+  void _onCharacterTap() async {
+    if (controller.isRecording) {
+      await controller.stopDump();
+    } else {
+      await controller.startDump();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset('assets/floating_noodle_image.webp', height: 180),
+      backgroundColor: _bgTop,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [_bgTop, _bgBottom],
+          ),
+        ),
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: SteamLayer(active: controller.isPlaying),
+              ),
 
-                const SizedBox(height: 20),
-
-                Text(
-                  controller.statusText,
-                  style: const TextStyle(fontSize: 18),
-                ),
-
-                const SizedBox(height: 20),
-
-                if (!controller.isProcessing)
-                  ElevatedButton(
-                    onPressed: controller.isPlaying
-                        ? null
-                        : () async {
-                            if (controller.isRecording) {
-                              await controller.stopDump();
-                            } else {
-                              await controller.startDump();
-                            }
-                          },
-                    child: Text(
-                      controller.isPlaying
-                          ? "Speaking..."
-                          : controller.isRecording
-                          ? "Stop"
-                          : "Dump",
+              Positioned(
+                top: 12,
+                right: 16,
+                child: GestureDetector(
+                  onTap: () => context.go(AppRoutes.saveSettings),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: AppColors.lightBrown.withOpacity(0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.settings_outlined,
+                      color: AppColors.lightBrown.withOpacity(0.4),
+                      size: 18,
                     ),
                   ),
-              ],
-            ),
-
-            Positioned(
-              top: 12,
-              right: 12,
-              child: IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () {
-                  context.go(AppRoutes.saveSettings);
-                },
+                ),
               ),
-            ),
-          ],
+
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (controller.errorText == null)
+                      NoodleSpeechBubble(text: controller.statusText),
+
+                    const SizedBox(height: 16),
+
+                    NoodleCharacter(
+                      isRecording: controller.isRecording,
+                      isPlaying: controller.isPlaying,
+                      isProcessing: controller.isProcessing,
+                      onTap: controller.isPlaying ? null : _onCharacterTap,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    if (controller.errorText != null)
+                      NoodleErrorBanner(
+                        message: controller.errorText!,
+                        onDismiss: controller.clearError,
+                      )
+                    else if (controller.isProcessing)
+                      const ProcessingDots()
+                    else
+                      DumpButton(
+                        isRecording: controller.isRecording,
+                        isPlaying: controller.isPlaying,
+                        onTap: controller.isPlaying ? null : _onCharacterTap,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -23,7 +23,7 @@ class TransparentButton extends StatelessWidget {
       child: SizedBox(
         width: width,
         height: height,
-        // child: Text("herrrr"),
+        child: Text("herrrr"),
       ),
     );
   }

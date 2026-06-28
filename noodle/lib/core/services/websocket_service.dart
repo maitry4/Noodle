@@ -5,31 +5,41 @@ class WebSocketService {
   WebSocket? _socket;
 
   Function(Uint8List bytes)? onAudioReceived;
+  Function(String error)? onErrorReceived;
 
   bool get isConnected =>
-      _socket != null &&
-      _socket!.readyState == WebSocket.open;
+      _socket != null && _socket!.readyState == WebSocket.open;
 
-  Future<void> connect() async {
+  Future<void> connect({
+    required String apiKey,
+    required String deviceUuid,
+  }) async {
     if (isConnected) return;
 
-    _socket = await WebSocket.connect(
-      'ws://192.168.150.11:8000/ws/noodle',
+    final uri = Uri(
+      scheme: 'ws',
+      host: '192.168.150.11',
+      port: 8000,
+      path: '/ws/noodle',
+      queryParameters: {
+        'api_key': apiKey,
+        'device_uuid': deviceUuid,
+      },
     );
 
-    print("WebSocket connected");
+    _socket = await WebSocket.connect(uri.toString());
+
+    print("WebSocket connected — device: $deviceUuid");
 
     _socket!.listen(
       (message) {
         if (message is List<int>) {
-          final bytes =
-              Uint8List.fromList(message);
-
-          print(
-            "Received audio: ${bytes.length}",
-          );
-
+          final bytes = Uint8List.fromList(message);
+          print("Received audio: ${bytes.length} bytes");
           onAudioReceived?.call(bytes);
+        } else if (message is String) {
+          print("Received text: $message");
+          onErrorReceived?.call(message);
         }
       },
       onDone: () {
