@@ -15,11 +15,11 @@ export default function Home() {
         playsInline
         className="absolute inset-0 w-full h-full object-cover z-0"
       >
-        <source src="/noodle-loop.mp4" type="video/mp4" />
+        <source src="/Noodle/noodle-loop.mp4" type="video/mp4" />
       </video>
 
       <div className="relative z-20 flex flex-col items-center justify-center">
-        <img src="/noodle_image.png" alt="Noodle" className="w-64 h-auto" />
+        <img src="/Noodle/noodle_image.png" alt="Noodle" className="w-64 h-auto" />
       <p className="text-xl text-[#462703] drop-shadow-md">Your privacy-first AI buddy who roast's you out of your head.</p>
       <h1 className="text-5xl font-bold text-[#462703] mb-4 drop-shadow-lg">Meet Noodle</h1>
         <button className="px-6 py-3  bg-[#fbb422] text-[#462703] font-bold rounded-full shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
