@@ -115,7 +115,7 @@ Everything is forgotten
 ```text
 Noodle/
 │
-├── flutter-app/
+├── noodle/
 │   ├── lib/
 │   ├── android/
 │   └── ...
@@ -196,7 +196,7 @@ Landing Page (Static Export)
 FastAPI
         │
         ▼
-AWS Lambda
+Hugging Face Spaces (Docker)
 ```
 
 ### Mobile App

@@ -28,7 +28,6 @@ class WebSocketService {
     );
 
     _socket = await WebSocket.connect(uri.toString());
-    print("WebSocket connected — device: $deviceUuid, lang: $languageCode");
 
     _socket!.listen(
       (message) {
@@ -38,17 +37,14 @@ class WebSocketService {
           if (message == _audioEndMarker) {
             onAudioStreamEnd?.call();
           } else {
-            print("Received text: $message");
             onErrorReceived?.call(message);
           }
         }
       },
       onDone: () {
-        print("Socket closed");
         _socket = null;
       },
       onError: (e) {
-        print("Socket error: $e");
         _socket = null;
       },
     );

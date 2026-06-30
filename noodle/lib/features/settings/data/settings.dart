@@ -1,5 +1,3 @@
-// ignore: dangling_library_doc_comments
-/// This file will help to act as a riverpod bridge between hive services and modify options UI
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:noodle/core/models/user_settings.dart';
 import 'package:noodle/core/providers/app_providers.dart';

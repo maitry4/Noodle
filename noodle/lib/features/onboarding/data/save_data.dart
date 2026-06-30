@@ -1,7 +1,3 @@
-// ignore: dangling_library_doc_comments
-/// This file helps to save the preferences from onboarding screen(s)
-/// using Hive and Secure Storage through Riverpod bridge.
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:noodle/core/models/user_settings.dart';
 import 'package:noodle/core/providers/app_providers.dart';

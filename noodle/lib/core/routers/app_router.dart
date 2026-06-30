@@ -34,15 +34,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           location == AppRoutes.onboarding4 ||
           location == AppRoutes.saveApi;
 
-      // user has not completed onboarding
-      // force onboarding
-
       if (!completed && !isOnboardingFlow) {
         return AppRoutes.onboarding1;
       }
-
-      // user already completed onboarding
-      // don't show onboarding again
 
       if (completed && isOnboardingFlow) {
         return AppRoutes.brain;

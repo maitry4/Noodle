@@ -22,7 +22,7 @@ class NoodleButton extends StatelessWidget {
         padding: EdgeInsets.only(top:18, bottom: 18, left:25, right: 25),
         backgroundColor: color, 
         side: BorderSide(
-          color: theme.colorScheme.outline, // Black border
+          color: theme.colorScheme.outline,
           width: 2.0,
         ),
         shape: RoundedRectangleBorder(

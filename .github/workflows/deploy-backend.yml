@@ -1,0 +1,37 @@
+name: Deploy Backend to Hugging Face
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'noodle/server/**'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Sync to Hugging Face Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          
+          # Clone the Hugging Face space
+          git clone https://maitry4:$HF_TOKEN@huggingface.co/spaces/maitry4/noodle-backend hf_space
+          
+          # Remove all old files from the Space EXCEPT .git and the Space's README.md (which has HF config)
+          find hf_space -maxdepth 1 -mindepth 1 ! -name '.git' ! -name 'README.md' -exec rm -rf {} +
+          
+          # Copy the server files over
+          cp -r noodle/server/* hf_space/
+          
+          # Commit and push
+          cd hf_space
+          git add .
+          git commit -m "Auto-sync backend from GitHub" || echo "No changes to commit"
+          git push

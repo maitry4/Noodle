@@ -1,6 +1,3 @@
-// ignore: dangling_library_doc_comments
-/// This page allows switching between shared brain and personal brain.
-/// Personal API key is stored securely.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
