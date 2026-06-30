@@ -13,7 +13,6 @@ def init_db():
     with get_db() as conn:
         cursor = conn.cursor()
         
-        # Stats table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS stats (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -21,12 +20,10 @@ def init_db():
             )
         ''')
         
-        # Ensure the single row exists
         cursor.execute('SELECT COUNT(*) FROM stats')
         if cursor.fetchone()[0] == 0:
             cursor.execute('INSERT INTO stats (id, rant_resolved) VALUES (1, 0)')
 
-        # Rate limits table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS rate_limits (
                 device_uuid TEXT PRIMARY KEY,

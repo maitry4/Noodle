@@ -36,13 +36,11 @@ Never break character. Never mention being an AI.""",
 
 DEFAULT_LANGUAGE = "en-US"
 
-# ── Tunable timeouts ──
 MAX_RECORDING_SECONDS = 40
 CLIENT_IDLE_TIMEOUT = 40
-GEMINI_FIRST_CHUNK_TIMEOUT = 40   # Gemini needs more time to start replying to longer input
-GEMINI_CHUNK_TIMEOUT = 40  
+GEMINI_FIRST_CHUNK_TIMEOUT = 40
+GEMINI_CHUNK_TIMEOUT = 40
 
-temp = 0
 class NoodleError(Exception):
     pass
 
@@ -54,8 +52,6 @@ class NoodleWebSocketService:
         self.system_prompt = NOODLE_PROMPTS.get(language_code, NOODLE_PROMPTS[DEFAULT_LANGUAGE])
 
     async def process_stream(self, websocket):
-        print("\n========== WS REQUEST START ==========")
-
         try:
             live_context = self.client.aio.live.connect(
                 model="gemini-2.5-flash-native-audio-latest",
@@ -70,16 +66,11 @@ class NoodleWebSocketService:
             raise NoodleError(f"Couldn't connect to Gemini: {repr(e)}")
 
         async with live_context as session:
-            print("Gemini connected")
-
-            # ── Receive microphone chunks from Flutter ──
             start_time = time.monotonic()
             try:
                 while True:
                     if time.monotonic() - start_time >= MAX_RECORDING_SECONDS:
-                        print("Max recording duration reached, ending stream")
                         await session.send_realtime_input(audio_stream_end=True)
-                        temp = time.monotonic() - start_time
                         break
 
                     try:
@@ -100,12 +91,9 @@ class NoodleWebSocketService:
 
                     elif message.get("text"):
                         text = message["text"]
-                        print(f"Received text: {text}")
 
                         if text == "END":
-                            print("Audio stream finished. Waiting for Gemini...")
                             await session.send_realtime_input(audio_stream_end=True)
-                            temp = time.monotonic() - start_time
                             break
 
             except WebSocketDisconnect:
@@ -115,7 +103,6 @@ class NoodleWebSocketService:
             except Exception as e:
                 raise NoodleError(f"Error receiving audio from client: {repr(e)}")
 
-            # ── Stream Gemini's response back to the client as it arrives ──
             gemini_messages = session.receive()
             received_any_audio = False
 
@@ -128,18 +115,15 @@ class NoodleWebSocketService:
                         )
                     except asyncio.TimeoutError:
                         if received_any_audio:
-                            print("Noodle went quiet mid-response, ending turn early")
                             break
                         raise NoodleError("Noodle couldn't process that in time. Please try again.")
                     except StopAsyncIteration:
                         break
-                    print(f"[DEBUG RAW] {message}") 
+
                     if message.server_content:
                         model_turn = message.server_content.model_turn
                         if model_turn:
                             for part in model_turn.parts:
-                                print(f"[DEBUG] part: text={getattr(part, 'text', None)!r} "
-                                    f"has_inline_data={bool(getattr(part, 'inline_data', None))}")
                                 if hasattr(part, "inline_data") and part.inline_data:
                                     chunk = part.inline_data.data
                                     received_any_audio = True
@@ -149,7 +133,6 @@ class NoodleWebSocketService:
                                         raise NoodleError(f"Failed to send audio to client: {repr(e)}")
 
                         if message.server_content.turn_complete:
-                            print(f"Gemini turn complete{temp}")
                             break
 
             except ResourceExhausted:
@@ -175,6 +158,3 @@ class NoodleWebSocketService:
                 await websocket.send_text("__AUDIO_END__")
             except Exception:
                 pass
-
-            print("Response stream sent to Flutter")
-            print("========== WS REQUEST END ==========\n")

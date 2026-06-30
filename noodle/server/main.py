@@ -36,7 +36,6 @@ async def noodle_socket(websocket: WebSocket):
     user_api_key: str | None = websocket.query_params.get("api_key") or None
     language_code: str = websocket.query_params.get("language_code", "en-US")
 
-    print(f"WebSocket connected | UUID: {device_uuid} | has_own_key: {user_api_key is not None} | lang: {language_code}")
 
     try:
         if user_api_key:
@@ -68,10 +67,9 @@ async def noodle_socket(websocket: WebSocket):
         increment_rant_resolved()
 
     except WebSocketDisconnect:
-        print("WebSocket disconnected")
+        pass
 
     except NoodleError as e:
-        print(f"NoodleError: {e}")
         try:
             await websocket.send_text(str(e))
             await websocket.close()
@@ -79,7 +77,6 @@ async def noodle_socket(websocket: WebSocket):
             pass
 
     except Exception as e:
-        print(f"Unexpected error: {repr(e)}")
         try:
             await websocket.send_text("ERROR: Something went wrong on our end. Please try again.")
             await websocket.close()
