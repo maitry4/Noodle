@@ -1,38 +1,66 @@
+import asyncio
+import time
+
+from fastapi import WebSocketDisconnect
 from google import genai
 from google.genai import types
 from google.api_core.exceptions import GoogleAPIError, PermissionDenied, ResourceExhausted, InvalidArgument
 
-from utils.audio_conversion import pcm_to_wav
 
+NOODLE_PROMPTS = {
+    "en-US": """You are Noodle — a sharp-witted friend who gets people out of their head.
+RESPOND IN ENGLISH (US). YOU MUST RESPOND UNMISTAKABLY IN ENGLISH.
+Someone just voice-dumped a spiral of overthinking at you. Reply in 2-3 short sentences, max.
+Roast them playfully for the specific thing they're spiraling about — be SPECIFIC, not generic.
+Keep it warm underneath, never mean. End with a tiny push to act or let go.
+If asked who you are: "I'm Noodle. I get you out of your head."
+Never break character. Never mention being an AI.""",
 
-SYSTEM_PROMPT = """
-You are Noodle.
-Your job is to help that overthinker out of their head with a small fun response. Like a friend who roasts you when you overthink.
-Be gentle but roast.
-Listen to user audio and reply as Noodle.
-And say you are noodle if the user asks about you say I get you out of your head.
-"""
+    "en-IN": """You are Noodle — a witty friend who gets people out of their head.
+RESPOND IN INDIAN ENGLISH. YOU MUST RESPOND UNMISTAKABLY IN ENGLISH, with a natural Indian English flavor.
+Someone just voice-dumped a spiral of overthinking at you. Reply in 2-3 short sentences, max.
+Roast them playfully for the specific thing they're spiraling about — be SPECIFIC, not generic.
+You can casually mix in light Hinglish words (yaar, arre, chill na) if it fits naturally.
+Keep it warm underneath, never mean. End with a tiny push to act or let go.
+If asked who you are: "I'm Noodle. I get you out of your head."
+Never break character. Never mention being an AI.""",
 
+    "hi-IN": """तुम Noodle हो — एक मज़ेदार और तीखी ज़ुबान वाला दोस्त, जो लोगों को overthinking से बाहर निकालता है।
+हिंदी में जवाब दो। तुम्हें सिर्फ़ और सिर्फ़ हिंदी में जवाब देना है, अंग्रेज़ी में बिल्कुल नहीं।
+किसी ने अभी अपनी उलझन तुम्हें आवाज़ में सुनाई है। सिर्फ़ 2-3 छोटे वाक्यों में जवाब दो।
+उनकी specific बात पर हल्के-फुल्के अंदाज़ में चुटकी लो — generic मत बनो।
+अंदर से प्यार झलकना चाहिए, कभी मतलबी मत बनो। आख़िर में एक छोटा सा push दो कि वो आगे बढ़ें या छोड़ दें।
+अगर कोई पूछे तुम कौन हो: "मैं Noodle हूं। मैं तुम्हें तुम्हारे दिमाग़ से बाहर निकालता हूं।"
+कभी character मत तोड़ो। कभी मत कहो कि तुम एक AI हो।""",
+}
 
+DEFAULT_LANGUAGE = "en-US"
+
+# ── Tunable timeouts ──
+MAX_RECORDING_SECONDS = 40
+CLIENT_IDLE_TIMEOUT = 40
+GEMINI_FIRST_CHUNK_TIMEOUT = 40   # Gemini needs more time to start replying to longer input
+GEMINI_CHUNK_TIMEOUT = 40  
+
+temp = 0
 class NoodleError(Exception):
-    """Raised for known, user-facing errors — message is sent directly to the client."""
     pass
 
 
 class NoodleWebSocketService:
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, language_code: str = DEFAULT_LANGUAGE):
         self.client = genai.Client(api_key=api_key)
+        self.system_prompt = NOODLE_PROMPTS.get(language_code, NOODLE_PROMPTS[DEFAULT_LANGUAGE])
 
     async def process_stream(self, websocket):
         print("\n========== WS REQUEST START ==========")
 
-        # ── Connect to Gemini ──
         try:
             live_context = self.client.aio.live.connect(
                 model="gemini-2.5-flash-native-audio-latest",
                 config=types.LiveConnectConfig(
-                    system_instruction=SYSTEM_PROMPT,
+                    system_instruction=self.system_prompt,
                     response_modalities=["AUDIO"],
                 ),
             )
@@ -45,9 +73,21 @@ class NoodleWebSocketService:
             print("Gemini connected")
 
             # ── Receive microphone chunks from Flutter ──
+            start_time = time.monotonic()
             try:
                 while True:
-                    message = await websocket.receive()
+                    if time.monotonic() - start_time >= MAX_RECORDING_SECONDS:
+                        print("Max recording duration reached, ending stream")
+                        await session.send_realtime_input(audio_stream_end=True)
+                        temp = time.monotonic() - start_time
+                        break
+
+                    try:
+                        message = await asyncio.wait_for(
+                            websocket.receive(), timeout=CLIENT_IDLE_TIMEOUT
+                        )
+                    except asyncio.TimeoutError:
+                        raise NoodleError("Connection went quiet. Please try again.")
 
                     if message.get("bytes"):
                         chunk = message["bytes"]
@@ -65,32 +105,52 @@ class NoodleWebSocketService:
                         if text == "END":
                             print("Audio stream finished. Waiting for Gemini...")
                             await session.send_realtime_input(audio_stream_end=True)
+                            temp = time.monotonic() - start_time
                             break
 
+            except WebSocketDisconnect:
+                raise
+            except NoodleError:
+                raise
             except Exception as e:
                 raise NoodleError(f"Error receiving audio from client: {repr(e)}")
 
-            # ── Collect Gemini's response ──
-            output_audio = bytearray()
+            # ── Stream Gemini's response back to the client as it arrives ──
+            gemini_messages = session.receive()
+            received_any_audio = False
 
             try:
-                async for message in session.receive():
-                    print("\n=== GEMINI MESSAGE ===")
-                    print(message)
-                    print("======================")
-
-                    if not message.server_content:
-                        continue
-
-                    model_turn = message.server_content.model_turn
-                    if model_turn:
-                        for part in model_turn.parts:
-                            if hasattr(part, "inline_data") and part.inline_data:
-                                output_audio.extend(part.inline_data.data)
-
-                    if message.server_content.turn_complete:
-                        print("Gemini turn complete")
+                while True:
+                    timeout = GEMINI_CHUNK_TIMEOUT if received_any_audio else GEMINI_FIRST_CHUNK_TIMEOUT
+                    try:
+                        message = await asyncio.wait_for(
+                            gemini_messages.__anext__(), timeout=timeout
+                        )
+                    except asyncio.TimeoutError:
+                        if received_any_audio:
+                            print("Noodle went quiet mid-response, ending turn early")
+                            break
+                        raise NoodleError("Noodle couldn't process that in time. Please try again.")
+                    except StopAsyncIteration:
                         break
+                    print(f"[DEBUG RAW] {message}") 
+                    if message.server_content:
+                        model_turn = message.server_content.model_turn
+                        if model_turn:
+                            for part in model_turn.parts:
+                                print(f"[DEBUG] part: text={getattr(part, 'text', None)!r} "
+                                    f"has_inline_data={bool(getattr(part, 'inline_data', None))}")
+                                if hasattr(part, "inline_data") and part.inline_data:
+                                    chunk = part.inline_data.data
+                                    received_any_audio = True
+                                    try:
+                                        await websocket.send_bytes(chunk)
+                                    except Exception as e:
+                                        raise NoodleError(f"Failed to send audio to client: {repr(e)}")
+
+                        if message.server_content.turn_complete:
+                            print(f"Gemini turn complete{temp}")
+                            break
 
             except ResourceExhausted:
                 raise NoodleError(
@@ -103,26 +163,18 @@ class NoodleWebSocketService:
                 raise NoodleError(f"Invalid request to Gemini: {e}")
             except GoogleAPIError as e:
                 raise NoodleError(f"Gemini API error: {e.message}")
+            except NoodleError:
+                raise
             except Exception as e:
                 raise NoodleError(f"Unexpected error while getting Gemini response: {repr(e)}")
 
-            if not output_audio:
-                raise NoodleError("Noodle didn't generate any audio. Try speaking a bit longer.")
-
-            # ── Convert and send back ──
-            print(f"Generated audio: {len(output_audio)} bytes")
+            if not received_any_audio:
+                raise NoodleError("Noodle didn't generate any audio. Try speaking a bit lesser.")
 
             try:
-                wav_audio = pcm_to_wav(bytes(output_audio), sample_rate=24000)
-            except Exception as e:
-                raise NoodleError(f"Failed to convert audio: {repr(e)}")
+                await websocket.send_text("__AUDIO_END__")
+            except Exception:
+                pass
 
-            print(f"WAV size: {len(wav_audio)} bytes")
-
-            try:
-                await websocket.send_bytes(wav_audio)
-            except Exception as e:
-                raise NoodleError(f"Failed to send audio to client: {repr(e)}")
-
-            print("Response sent to Flutter")
+            print("Response stream sent to Flutter")
             print("========== WS REQUEST END ==========\n")

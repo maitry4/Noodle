@@ -6,9 +6,12 @@ from dotenv import load_dotenv
 from services.noodle_websocket_service import NoodleWebSocketService, NoodleError
 from services.rate_limiter import check_rate_limit
 from services.stats_service import increment_rant_resolved, get_rant_resolved
+from services.db import init_db
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
+
+init_db()
 
 app = FastAPI()
 
@@ -31,8 +34,9 @@ async def noodle_socket(websocket: WebSocket):
 
     device_uuid: str = websocket.query_params.get("device_uuid", "")
     user_api_key: str | None = websocket.query_params.get("api_key") or None
+    language_code: str = websocket.query_params.get("language_code", "en-US")
 
-    print(f"WebSocket connected | UUID: {device_uuid} | has_own_key: {user_api_key is not None}")
+    print(f"WebSocket connected | UUID: {device_uuid} | has_own_key: {user_api_key is not None} | lang: {language_code}")
 
     try:
         if user_api_key:
@@ -58,10 +62,9 @@ async def noodle_socket(websocket: WebSocket):
 
             api_key_to_use = SHARED_API_KEY
 
-        ws_service = NoodleWebSocketService(api_key_to_use)
+        ws_service = NoodleWebSocketService(api_key_to_use, language_code)
         await ws_service.process_stream(websocket)
 
-        # Only increment after a successful response
         increment_rant_resolved()
 
     except WebSocketDisconnect:
@@ -82,3 +85,5 @@ async def noodle_socket(websocket: WebSocket):
             await websocket.close()
         except Exception:
             pass
+
+        

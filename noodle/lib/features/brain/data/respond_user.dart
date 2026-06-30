@@ -15,40 +15,61 @@ class RespondUser extends ChangeNotifier {
   late final WebSocketService _ws;
 
   StreamSubscription<Uint8List>? _micSubscription;
+  Timer? _maxDurationTimer;
+  static const Duration _maxRecordingDuration = Duration(seconds: 60);
 
   bool _isRecording = false;
   bool _isProcessing = false;
   bool _isPlaying = false;
+  bool _isBusy = false;
   String? _errorText;
 
-  RespondUser() {
-    _ws = WebSocketService();
+  String _languageCode = 'en-US'; // default
+  String get languageCode => _languageCode;
 
-    _ws.onAudioReceived = (bytes) async {
-      if (bytes.isEmpty) {
-        _isProcessing = false;
-        _errorText = "Sorry, I couldn't hear you. Try again!";
-        await _ws.disconnect();
-        notifyListeners();
-        return;
-      }
-      await _handleAudioResponse(bytes);
-    };
-
-    _ws.onErrorReceived = (message) {
-      _isProcessing = false;
-      _isPlaying = false;
-      _errorText = message;
-      notifyListeners();
-    };
-
-    _audioService.onPlayerComplete.listen((_) async {
-      _isPlaying = false;
-      await _ws.disconnect();
-      notifyListeners();
-    });
+  void setLanguage(String code) {
+    if (_languageCode == code) return;
+    _languageCode = code;
+    notifyListeners();
   }
 
+  RespondUser() {
+  _ws = WebSocketService();
+
+  _ws.onAudioChunkReceived = (bytes) async {
+    if (!_isPlaying) {
+      _isProcessing = false;
+      _isPlaying = true;
+      notifyListeners();
+      await _audioService.startPlaybackStream();
+    }
+    _audioService.feedAudioChunk(bytes);
+  };
+
+  _ws.onAudioStreamEnd = () {
+    _audioService.markPlaybackStreamEnded();
+  };
+
+  _ws.onErrorReceived = (message) async {
+    await _micSubscription?.cancel();
+    _micSubscription = null;
+    _maxDurationTimer?.cancel();
+    _maxDurationTimer = null;
+    await _audioService.stopRecordingStream();
+
+    _isRecording = false;
+    _isProcessing = false;
+    _isPlaying = false;
+    _errorText = message;
+    notifyListeners();
+  };
+
+  _audioService.onPlayerComplete.listen((_) async {
+    _isPlaying = false;
+    await _ws.disconnect();
+    notifyListeners();
+  });
+}
   bool get isRecording => _isRecording;
   bool get isProcessing => _isProcessing;
   bool get isPlaying => _isPlaying;
@@ -67,48 +88,61 @@ class RespondUser extends ChangeNotifier {
   }
 
   Future<void> startDump() async {
-    _errorText = null;
+  if (_isRecording || _isProcessing || _isPlaying || _isBusy) return;
+  _isBusy = true;
+  _errorText = null;
+  _isRecording = true;
+  notifyListeners();
 
+  try {
     final settings = await _secureStorage.getUserSettings();
     final apiKey = settings.geminiApiKey ?? '';
     final deviceUuid = await DeviceUuidService.getDeviceUuid();
 
-    await _ws.connect(apiKey: apiKey, deviceUuid: deviceUuid);
-
-    _isRecording = true;
-    notifyListeners();
+    await _ws.connect(apiKey: apiKey, deviceUuid: deviceUuid, languageCode: languageCode);
 
     final stream = await _audioService.startRecordingStream();
+    _micSubscription = stream.listen((chunk) => _ws.sendBytes(chunk));
 
-    _micSubscription = stream.listen((chunk) {
-      _ws.sendBytes(chunk);
+    _maxDurationTimer = Timer(_maxRecordingDuration, () {
+      if (_isRecording) stopDump();
     });
-  }
-
-  Future<void> stopDump() async {
+  } catch (e) {
     _isRecording = false;
-    _isProcessing = true;
+    _errorText = 'Could not start recording: $e';
+    await _ws.disconnect();
+  } finally {
+    _isBusy = false;
     notifyListeners();
+  }
+}
 
+Future<void> stopDump() async {
+  if (!_isRecording || _isBusy) return;
+  _isBusy = true;
+  _maxDurationTimer?.cancel();
+  _maxDurationTimer = null;
+  _isRecording = false;
+  _isProcessing = true;
+  notifyListeners();
+
+  try {
     await _micSubscription?.cancel();
     await _audioService.stopRecordingStream();
-
     _ws.send("END");
-  }
-
-  Future<void> _handleAudioResponse(Uint8List bytes) async {
-    debugPrint("Playing ${bytes.length} bytes");
-
+  } catch (e) {
     _isProcessing = false;
-    _isPlaying = true;
+    _errorText = 'Could not stop recording: $e';
+  } finally {
+    _isBusy = false;
     notifyListeners();
-
-    await _audioService.playAudioBytes(bytes);
   }
+}
 
   @override
   void dispose() {
     _micSubscription?.cancel();
+    _maxDurationTimer?.cancel();
     _ws.disconnect();
     _audioService.dispose();
     super.dispose();

@@ -60,10 +60,32 @@ class _FloatingCharacterState extends State<FloatingCharacter> {
         child: SafeArea(
           child: Stack(
             children: [
-              Positioned.fill(
-                child: SteamLayer(active: controller.isPlaying),
+              Positioned.fill(child: SteamLayer(active: controller.isPlaying)),
+              Positioned(
+                top: 12,
+                left: 16,
+                child: Row(
+                  children: [
+                    _LangChip(
+                      label: 'EN',
+                      code: 'en-US',
+                      controller: controller,
+                    ),
+                    const SizedBox(width: 6),
+                    _LangChip(
+                      label: 'IN',
+                      code: 'en-IN',
+                      controller: controller,
+                    ),
+                    const SizedBox(width: 6),
+                    _LangChip(
+                      label: 'हि',
+                      code: 'hi-IN',
+                      controller: controller,
+                    ),
+                  ],
+                ),
               ),
-
               Positioned(
                 top: 12,
                 right: 16,
@@ -98,7 +120,9 @@ class _FloatingCharacterState extends State<FloatingCharacter> {
                       isRecording: controller.isRecording,
                       isPlaying: controller.isPlaying,
                       isProcessing: controller.isProcessing,
-                      onTap: controller.isPlaying ? null : _onCharacterTap,
+                      onTap: (controller.isPlaying || controller.isProcessing)
+                          ? null
+                          : _onCharacterTap,
                     ),
 
                     const SizedBox(height: 28),
@@ -114,12 +138,51 @@ class _FloatingCharacterState extends State<FloatingCharacter> {
                       DumpButton(
                         isRecording: controller.isRecording,
                         isPlaying: controller.isPlaying,
-                        onTap: controller.isPlaying ? null : _onCharacterTap,
+                        onTap: (controller.isPlaying || controller.isProcessing)
+                            ? null
+                            : _onCharacterTap,
                       ),
                   ],
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LangChip extends StatelessWidget {
+  final String label;
+  final String code;
+  final RespondUser controller;
+
+  const _LangChip({
+    required this.label,
+    required this.code,
+    required this.controller,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = controller.languageCode == code;
+    return GestureDetector(
+      onTap: () => controller.setLanguage(code),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.lightBrown.withOpacity(0.25)
+              : AppColors.lightBrown.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: AppColors.lightBrown.withOpacity(selected ? 0.9 : 0.4),
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),

@@ -125,10 +125,10 @@ Noodle/
 │   ├── services/
 │   └── ...
 │
-├── static/
-│   ├── index.html
-│   ├── style.css
-│   └── script.js
+├── landing_page/
+│   ├── src/
+│   ├── package.json
+│   └── next.config.ts
 │
 └── README.md
 ```
@@ -181,13 +181,13 @@ Built with FastAPI and designed to remain stateless wherever possible.
 
 ### Landing Page
 
-The public website is hosted separately from the application backend.
+The public website is built with Next.js and hosted separately from the application backend.
 
 ```text
 GitHub Pages
         │
         ▼
-Landing Page
+Landing Page (Static Export)
 ```
 
 ### Backend API

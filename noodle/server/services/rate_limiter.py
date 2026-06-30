@@ -1,11 +1,8 @@
 import time
-
-# UUID -> {"count": int, "first_request_ts": float}
-_rate_store: dict[str, dict] = {}
+from services.db import get_db
 
 MAX_REQUESTS = 10
 WINDOW_SECONDS = 24 * 60 * 60  # 24 hours
-
 
 def check_rate_limit(device_uuid: str) -> bool:
     """
@@ -13,22 +10,33 @@ def check_rate_limit(device_uuid: str) -> bool:
     Resets the window automatically when 24 hours have passed.
     """
     now = time.time()
-    entry = _rate_store.get(device_uuid)
-
-    if entry is None:
-        # First ever request from this device
-        _rate_store[device_uuid] = {"count": 1, "first_request_ts": now}
+    
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT count, first_request_ts FROM rate_limits WHERE device_uuid = ?', (device_uuid,))
+        row = cursor.fetchone()
+        
+        if row is None:
+            # First ever request from this device
+            cursor.execute('INSERT INTO rate_limits (device_uuid, count, first_request_ts) VALUES (?, ?, ?)',
+                           (device_uuid, 1, now))
+            conn.commit()
+            return True
+            
+        count, first_request_ts = row['count'], row['first_request_ts']
+        elapsed = now - first_request_ts
+        
+        if elapsed >= WINDOW_SECONDS:
+            # 24-hour window has passed — reset
+            cursor.execute('UPDATE rate_limits SET count = 1, first_request_ts = ? WHERE device_uuid = ?',
+                           (now, device_uuid))
+            conn.commit()
+            return True
+            
+        if count >= MAX_REQUESTS:
+            return False
+            
+        cursor.execute('UPDATE rate_limits SET count = count + 1 WHERE device_uuid = ?', (device_uuid,))
+        conn.commit()
         return True
-
-    elapsed = now - entry["first_request_ts"]
-
-    if elapsed >= WINDOW_SECONDS:
-        # 24-hour window has passed — reset
-        _rate_store[device_uuid] = {"count": 1, "first_request_ts": now}
-        return True
-
-    if entry["count"] >= MAX_REQUESTS:
-        return False
-
-    entry["count"] += 1
-    return True
