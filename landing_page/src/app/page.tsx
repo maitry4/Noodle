@@ -31,9 +31,9 @@ export default function Home() {
           Your privacy-first AI buddy who roast&apos;s you out of your head.
         </p>
         <h1 className="text-5xl font-bold text-[#462703] mb-4 drop-shadow-lg">Meet Noodle</h1>
-        <button className="px-6 py-3 bg-[#fbb422] text-[#462703] font-bold rounded-full shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
+        <Link href="https://maitry8.gumroad.com/l/noodle" target="_blank" className="px-6 py-3 bg-[#fbb422] text-[#462703] font-bold rounded-full shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
           Download Now
-        </button>
+        </Link>
         <p className="mt-4 font-bold text-sm bg-[#a3a861] text-[#462703] rounded-full px-3 py-1 z-20">
           {rantsResolved === null ? "..." : `${rantsResolved.toLocaleString()} rants resolved so far`}
         </p>

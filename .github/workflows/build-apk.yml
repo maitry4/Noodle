@@ -27,6 +27,19 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Decode Keystore
+        working-directory: ./noodle
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/upload-keystore.jks
+
+      - name: Create key.properties
+        working-directory: ./noodle
+        run: |
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
+
       - name: Get Dependencies
         working-directory: ./noodle
         run: flutter pub get
