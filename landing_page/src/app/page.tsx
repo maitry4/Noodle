@@ -7,7 +7,7 @@ export default function Home() {
   const [rantsResolved, setRantsResolved] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch("https://your-server.com/stats")
+    fetch("https://maitry4-noodle-backend.hf.space/stats")
       .then((r) => r.json())
       .then((data) => setRantsResolved(data.rant_resolved))
       .catch(() => setRantsResolved(0));

@@ -20,9 +20,8 @@ class WebSocketService {
     if (isConnected) return;
 
     final uri = Uri(
-      scheme: 'ws',
-      host: '192.168.150.11',
-      port: 8000,
+      scheme: 'wss',
+      host: 'maitry4-noodle-backend.hf.space',
       path: '/ws/noodle',
       queryParameters: {'api_key': apiKey, 'device_uuid': deviceUuid,'language_code': languageCode,},
     );
