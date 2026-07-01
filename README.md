@@ -3,7 +3,6 @@
 > A sarcastic voice companion that helps you stop overthinking, one emotional dump at a time.
 
 🌐 **Download Now From:** [maitry4.github.io/Noodle](https://maitry4.github.io/Noodle/)
-🛒 **Get the App:** [Gumroad](https://gumroad.com/) 
 
 Noodle is a privacy-first AI companion designed for people who get stuck in loops of self-doubt, over-analysis, and overthinking.
 
