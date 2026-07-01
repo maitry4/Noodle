@@ -1,7 +1,7 @@
 import time
 from services.db import get_db
 
-MAX_REQUESTS = 10
+MAX_REQUESTS = 20
 WINDOW_SECONDS = 24 * 60 * 60
 
 def check_rate_limit(device_uuid: str) -> bool:
