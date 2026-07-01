@@ -23,10 +23,15 @@ class WebSocketService {
       scheme: 'wss',
       host: 'maitry4-noodle-backend.hf.space',
       path: '/ws/noodle',
-      queryParameters: {'api_key': apiKey, 'device_uuid': deviceUuid,'language_code': languageCode,},
+      queryParameters: {'device_uuid': deviceUuid, 'language_code': languageCode},
     );
 
-    _socket = await WebSocket.connect(uri.toString());
+    _socket = await WebSocket.connect(
+      uri.toString(),
+      headers: {
+        if (apiKey.isNotEmpty) 'x-api-key': apiKey,
+      },
+    );
 
     _socket!.listen(
       (message) {

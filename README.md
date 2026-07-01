@@ -2,6 +2,8 @@
 
 > A sarcastic voice companion that helps you stop overthinking, one emotional dump at a time.
 
+🌐 **Download Now From:** [maitry4.github.io/Noodle](https://maitry4.github.io/Noodle/)
+
 Noodle is a privacy-first AI companion designed for people who get stuck in loops of self-doubt, over-analysis, and overthinking.
 
 Instead of maintaining long-term memory or conversation history, Noodle listens to what's bothering you **right now**, responds with a mix of humor and perspective, and then forgets everything.
@@ -108,6 +110,30 @@ Everything is forgotten
 
 ---
 
+## 🚀 Getting Started (Local Development)
+
+### Prerequisites
+* Flutter SDK (for the frontend app)
+* Python 3.10+ (for the FastAPI backend)
+* Node.js (for the landing page)
+* Gemini API Key
+
+### Backend Setup
+1. Navigate to the server directory: `cd noodle/server`
+2. Install dependencies: `pip install -r requirements.txt`
+3. Create a `.env` file with your API key:
+   ```env
+   API_KEY=your_gemini_api_key_here
+   ```
+4. Run the development server: `uvicorn main:app --reload`
+
+### Frontend Setup
+1. Navigate to the app directory: `cd noodle`
+2. Fetch dependencies: `flutter pub get`
+3. Run the app: `flutter run`
+
+---
+
 ## 🏗 Architecture
 
 ### Repository Structure
@@ -118,11 +144,10 @@ Noodle/
 ├── noodle/
 │   ├── lib/
 │   ├── android/
-│   └── ...
-│
-├── server/
-│   ├── main.py
-│   ├── services/
+│   ├── server/
+│   │   ├── main.py
+│   │   ├── services/
+│   │   └── ...
 │   └── ...
 │
 ├── landing_page/

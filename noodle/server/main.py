@@ -33,7 +33,7 @@ async def noodle_socket(websocket: WebSocket):
     await websocket.accept()
 
     device_uuid: str = websocket.query_params.get("device_uuid", "")
-    user_api_key: str | None = websocket.query_params.get("api_key") or None
+    user_api_key: str | None = websocket.headers.get("x-api-key") or None
     language_code: str = websocket.query_params.get("language_code", "en-US")
 
 
