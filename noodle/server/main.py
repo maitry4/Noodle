@@ -30,6 +30,11 @@ def stats():
 
 @app.websocket("/ws/noodle")
 async def noodle_socket(websocket: WebSocket):
+    origin = websocket.headers.get("origin")
+    if origin and origin not in ["https://maitry4.github.io"]:
+        await websocket.close(code=1008)
+        return
+
     await websocket.accept()
 
     device_uuid: str = websocket.query_params.get("device_uuid", "")

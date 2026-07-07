@@ -16,13 +16,13 @@ def init_db():
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS stats (
                 id INTEGER PRIMARY KEY CHECK (id = 1),
-                rant_resolved INTEGER DEFAULT 0
+                rant_resolved INTEGER DEFAULT 28
             )
         ''')
         
         cursor.execute('SELECT COUNT(*) FROM stats')
         if cursor.fetchone()[0] == 0:
-            cursor.execute('INSERT INTO stats (id, rant_resolved) VALUES (1, 0)')
+            cursor.execute('INSERT INTO stats (id, rant_resolved) VALUES (1, 28)')
 
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS rate_limits (
