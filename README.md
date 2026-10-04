@@ -4,22 +4,6 @@
 
 🌐 **Download Now From:** [maitry4.github.io/Noodle](https://maitry4.github.io/Noodle/)
 
-Noodle is a privacy-first AI companion designed for people who get stuck in loops of self-doubt, over-analysis, and overthinking.
-
-Instead of maintaining long-term memory or conversation history, Noodle listens to what's bothering you **right now**, responds with a mix of humor and perspective, and then forgets everything.
-
-No journaling.
-
-No emotional archives.
-
-No permanent storage.
-
-Just vent, laugh, and move on.
-
----
-
-## 📸 Screenshots
-
 ### Onboarding Experience
 
 | Screen 1 | Screen 2 |
@@ -31,6 +15,18 @@ Just vent, laugh, and move on.
 | ![](UI_Designs/onboarding_screen3.png) | ![](UI_Designs/onboarding_screen4.png) |
 
 ---
+
+Noodle is a privacy-first AI companion designed for people who get stuck in loops of self-doubt, over-analysis, and overthinking.
+
+Instead of maintaining long-term memory or conversation history, Noodle listens to what's bothering you **right now**, responds with a mix of humor and perspective, and then forgets everything.
+
+No journaling.
+
+No emotional archives.
+
+No permanent storage.
+
+Just vent, laugh, and move on.
 
 ## ✨ Vision
 
